@@ -18,7 +18,7 @@ namespace LinkedDataView
 {
     public partial class Form1 : Form
     {
-        public readonly string PROGRAM_VERSION = "1.0";
+        public readonly string PROGRAM_VERSION = "1.1";
         public readonly string[] TYPE_TEXT = { "Unknown Type", "패턴", "비상방송", "펌프", "수신기 접점" };
         private ColumnHeaderSorting lvOutputPtnSorter;
         private ColumnHeaderSorting lvOutputCircuitSorter;

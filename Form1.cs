@@ -23,6 +23,7 @@ namespace LinkedDataView
         private ColumnHeaderSorting lvOutputPtnSorter;
         private ColumnHeaderSorting lvOutputCircuitSorter;
         private ColumnHeaderSorting lvPtnItemListSorter;
+        public readonly string CIRCUIT_INFO_CAN_NOT_FOUNT_MSG = "(연동표에서 회로 정보를 찾을 수 없음)";
         private bool fileOpened;
 
         public bool FileOpened
@@ -579,30 +580,37 @@ namespace LinkedDataView
                 int nNumber = 1;
                 foreach(string output in listRepeaterControls)
                 {
-                    Circuit outputCircuit = circuitDic[output];              
-
                     string strNumber = $"{nNumber:D3}";
-
-                    // 회로번호(output)을 보고 입력 회로 Dictionary에서 출력 Full Name을 얻어서 추가
-                    string strFullOutputName = outputCircuit.OutputFullName;
-
-                    // 회로번호를 기준으로 출력 내용을 얻음
-                    string strOutputContent = outputCircuit.OutputContent;
+                    string strFullOutputName = string.Empty;
 
                     // 이미지 아이템 인스턴스 생성
                     ListViewItem circuitRow = new ListViewItem();
 
-                    // 이미지 키 값을 얻음
-                    string strImageKey = imageManager.GetImageKey(strOutputContent);
-                    if (strImageKey != string.Empty)
+                    if (circuitDic.TryGetValue(output, out Circuit outputCircuit))
                     {
-                        circuitRow.ImageKey = strImageKey;
-                        
+                        // 회로번호(output)을 보고 입력 회로 Dictionary에서 출력 Full Name을 얻어서 추가
+                        strFullOutputName = outputCircuit.OutputFullName;
+
+                        // 회로번호를 기준으로 출력 내용을 얻음
+                        string strOutputContent = outputCircuit.OutputContent;
+
+                        // 이미지 키 값을 얻음
+                        string strImageKey = imageManager.GetImageKey(strOutputContent);
+                        if (strImageKey != string.Empty)
+                        {
+                            circuitRow.ImageKey = strImageKey;
+
+                        }
+                        else
+                        {
+                            circuitRow.ImageKey = imageManager.DEFAULT_IMAGE_NAME;
+                            //circuitRow.ImageIndex = -1;     // 이미지 없음
+                        }
                     }
                     else
                     {
+                        strFullOutputName = $"[{output}] {CIRCUIT_INFO_CAN_NOT_FOUNT_MSG}";
                         circuitRow.ImageKey = imageManager.DEFAULT_IMAGE_NAME;
-                        //circuitRow.ImageIndex = -1;     // 이미지 없음
                     }
 
                     circuitRow.SubItems.Add(strNumber);
@@ -679,6 +687,56 @@ namespace LinkedDataView
                 // 패턴 아이템 리스트 표시
                 foreach (string item in pattern.Items)
                 {
+                    string strFullOutputName = string.Empty;
+
+                    // 이미지 아이템 인스턴스 생성
+                    ListViewItem itemRow = new ListViewItem();
+
+                    if (circuitDic.TryGetValue(item, out Circuit circuit))
+                    {
+                        strFullOutputName = circuit.OutputFullName;
+
+                        // 회로번호를 기준으로 출력 내용을 얻음
+                        string strOutputContent = circuit.OutputContent;
+
+                        // 이미지 키 값을 얻음
+                        string strImageKey = imageManager.GetImageKey(strOutputContent);
+                        if (strImageKey != string.Empty)
+                        {
+                            itemRow.ImageKey = strImageKey;
+
+                        }
+                        else
+                        {
+                            itemRow.ImageKey = imageManager.DEFAULT_IMAGE_NAME;
+                            //circuitRow.ImageIndex = -1;     // 이미지 없음
+                        }
+                    }
+                    else
+                    {
+                        strFullOutputName = $"[{item}] {CIRCUIT_INFO_CAN_NOT_FOUNT_MSG}";
+                        itemRow.ImageKey = imageManager.DEFAULT_IMAGE_NAME;
+                    }
+
+                    // 검색 결과로써 패턴 아이템 리스트를 보여줄 때는 검색어와 매칭되는 row는 하이라이트 처리
+                    if (bSearch)
+                    {
+                        string strSearch = textBoxSearch.Text;
+
+                        if (strSearch != string.Empty)
+                        {
+                            if (strFullOutputName.Contains(strSearch))
+                            {
+                                itemRow.BackColor = Color.Blue;
+                                itemRow.ForeColor = Color.White;
+                            }
+                        }
+                    }
+
+                    itemRow.SubItems.Add(strFullOutputName);
+                    listViewPtnItemList.Items.Add(itemRow);
+
+                    /*
                     Circuit circuit = circuitDic[item];
 
                     string strFullOutputName = circuit.OutputFullName;
@@ -715,6 +773,7 @@ namespace LinkedDataView
                     }
 
                     listViewPtnItemList.Items.Add(itemRow);
+                    */
                 }
                 listViewPtnItemList.EndUpdate();
             }
@@ -794,46 +853,74 @@ namespace LinkedDataView
 
             if (strSearch == string.Empty)
             {
+                MessageBox.Show("검색어를 입력하세요.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            else if(strSearch.Length < 2)
+            {
+                MessageBox.Show("검색어는 두 글자 이상이어야 합니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
             // 패턴 Dictionary를 순회하면서 패턴 아이템을 순회, 회로번호를 기반으로 회로 Dictionary에서 Full Output Name과 비교 매칭
-            // 조건에 만족하는 회로가 발견되면 패턴을 리스트에 추가하고 해당 패턴 내의 패턴 아이템 순회를 중단하고 다음 패턴으로 넘어감
+            // 조건에 만족하는 회로가 발견되면 패턴을 리스트에 추가하고 해당 패턴 내의 패턴 아이템 순회를 중단하고 다음 패턴으로 넘어감 (ver1.0)
+            // 검색 대상을 전체 패턴 Dictionary에서 현재 선택된 입력 회로에 대한 출력 중 패턴들로 변경 (ver1.1)
 
-            List<string> matchedPtnList = new List<string>();
-            DataManager dataManager = DataManager.Instance;
-            Dictionary<string, Pattern> patternDic = dataManager.GetPatternDic();
-            SortedDictionary<string, Circuit>circuitDic = dataManager.GetCircuitDic();
-
-            foreach (KeyValuePair<string, Pattern> kvp in patternDic)
+            List<string> ptnList = GetPatternNameListFromListViewOutputPtn();
+            if(ptnList.Count > 0)
             {
-                bool bMatched = false;
-                Pattern p = kvp.Value;
-                List<string> patternItem = p.Items;
+                List<string> matchedPtnList = new List<string>();
+                DataManager dataManager = DataManager.Instance;
+                Dictionary<string, Pattern> patternDic = dataManager.GetPatternDic();
+                SortedDictionary<string, Circuit> circuitDic = dataManager.GetCircuitDic();
 
-                foreach (string item in patternItem)
+                foreach(string patternName in ptnList)
                 {
-                    string outputFullName = circuitDic[item].OutputFullName;
-                    if(outputFullName.Contains(strSearch))
+                    if(patternDic.TryGetValue(patternName, out Pattern pattern))
                     {
-                        bMatched = true;
-                        break;
+                        bool bMatched = false;
+                        List<string> patternItem = pattern.Items;
+
+                        foreach (string item in patternItem)
+                        {
+                            string outputFullName = string.Empty;
+
+                            // 회로 정보에서 찾으면 검색어와 비교, 못 찾으면 단순히 회로 번호만 검색어와 일치하는 지 검사
+                            if (circuitDic.TryGetValue(item, out Circuit circuit))
+                            {
+                                outputFullName = circuit.OutputFullName;
+                            }
+                            else
+                            {
+                                outputFullName = item + " " + CIRCUIT_INFO_CAN_NOT_FOUNT_MSG;
+                            }
+
+                            if (outputFullName.Contains(strSearch))
+                            {
+                                bMatched = true;
+                                break;
+                            }
+                        }
+
+                        if (bMatched)
+                        {
+                            matchedPtnList.Add(patternName);
+                        }
                     }
                 }
 
-                if (bMatched)
+                if (matchedPtnList.Count > 0)
                 {
-                    matchedPtnList.Add(kvp.Key);
+                    DisplayPtnSearchTree(matchedPtnList);
                 }
-            }
-
-            if (matchedPtnList.Count > 0)
-            {
-                DisplayPtnSearchTree(matchedPtnList);
+                else
+                {
+                    MessageBox.Show("검색어와 매칭되는 출력 회로가 포함된 패턴이 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
             }
             else
             {
-                MessageBox.Show("검색어와 매칭되는 출력 회로가 포함된 패턴이 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("현재 입력 회로에 해당하는 패턴이 리스트에 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
@@ -926,6 +1013,25 @@ namespace LinkedDataView
             imageList.Images.Add("pattern", Image.FromFile(imagePath));
 
             treeViewPtnSearch.ImageList = imageList;
+        }
+
+        private List<string> GetPatternNameListFromListViewOutputPtn()
+        {
+            List<string> patternNameList = new List<string>();
+            if (listViewOutputPtn.Items.Count > 0)
+            {
+                foreach(ListViewItem item in listViewOutputPtn.Items)
+                {
+                    string type = item.SubItems[2].Text;
+                    if(type == TYPE_TEXT[(int)TYPE_TEXT_INDEX.PATTERN])
+                    {
+                        string patternName = item.SubItems[0].Text;
+                        patternNameList.Add(patternName);
+                    }
+                }
+            }
+
+            return patternNameList;
         }
     }
 }

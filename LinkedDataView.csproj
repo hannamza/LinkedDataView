@@ -76,7 +76,9 @@
   <ItemGroup>
     <Compile Include="Circuit.cs" />
     <Compile Include="ColumnHeaderSorting.cs" />
+    <Compile Include="Contact.cs" />
     <Compile Include="DataManager.cs" />
+    <Compile Include="EB.cs" />
     <Compile Include="ExcelManager.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
@@ -94,6 +96,7 @@
     <Compile Include="Pattern.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Pump.cs" />
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
     </EmbeddedResource>

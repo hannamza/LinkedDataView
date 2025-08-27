@@ -14,6 +14,19 @@ namespace LinkedDataView
     {
         public const int MAX_PATTERN_COUNT = 511;
         public const int MAX_PATTERN_ITEM_COUNT = 250;
+        public readonly string[] SHEET_TYPES_TEXT = { "UNIT", "Pattern", "EB", "Pump", "PS", "Contact" };
+        public const int SEPERATING_NUM_FROM_UNIT_NUM = 1000;
+
+        public enum ENUM_SHEET_TYPES
+        {
+            UNKNOWN_TYPE = -1,
+            UNIT,
+            PATTERN,
+            EB,
+            PUMP,
+            PS,
+            CONTACT
+        }
 
         // C++ 엑셀 라이브러리와는 달리 0베이스
         enum UNIT_COLS 
@@ -48,6 +61,63 @@ namespace LinkedDataView
             ROW_START = 2
         }
 
+        enum EB_COLS
+        {
+            NUM,
+            REMARKS,
+            COMM_CONTENT
+        }
+
+        enum EB_ROWS
+        {
+            ROW_START = 2
+        }
+
+        enum PUMP_COLS
+        {
+            FACP_NUM,
+            PUMP_NUM,
+            PUMP_TYPE,
+            PUMP_NAME,
+            LCD_NAME,
+            CONTROL,
+            ITEM1,
+        }
+
+        enum PUMP_ROWS
+        {
+            ROW_START = 1
+        }
+
+        enum PS_COLS
+        {
+            FACP_NUM,
+            PS_NUM,
+            PS_TYPE,
+            NAME,
+            LCD,
+            CONTROL,
+            ITEM1,
+        }
+
+        enum PS_ROWS
+        {
+            ROW_START = 1
+        }
+
+        enum CONTACT_COLS
+        {
+            FACP_NUM,
+            CONTACT_NUM,
+            NAME,
+        }
+
+        enum CONTACT_ROWS
+        {
+            ROW_START = 1
+        }
+
+
         private static ExcelManager instance;
 
         private ExcelManager() { }
@@ -65,26 +135,37 @@ namespace LinkedDataView
             }
         }
 
-        // Sheet Name이 숫자 값이면 유닛 번호를, 패턴이면 1000 리턴, 그 외는 처리하지 않을 것이므로 -1
+        // Sheet Name으로 Unit Sheet와 그 외의 Sheet로 분류해서 처리하도록 분류
         private int CheckSheetType(string sheetName)
         {
-            int nRet = 0;
+            int nUnit = 0;
 
-            if(sheetName.Equals("Pattern"))
+            // 유닛을 제외한 Sheet에 해당하는 지를 찾고 일치하면 유닛 숫자와 분리를 위해 고정 값 (SEPERATING_NUM_FROM_UNIT_NUM)을 곱해서 리턴
+            for (int i = (int)ENUM_SHEET_TYPES.PATTERN; i <= (int)ENUM_SHEET_TYPES.CONTACT; i++)
             {
-                nRet = 1000;
-            }
-            else
-            {
-                bool bFigure = false;
-                bFigure = int.TryParse(sheetName, out nRet);
-                if (!bFigure)
+                string strType = SHEET_TYPES_TEXT[i];
+                if (sheetName.Equals(strType))
                 {
-                    nRet = -1;
+                    return i * SEPERATING_NUM_FROM_UNIT_NUM;
                 }
             }
 
-            return nRet;
+            // 유닛 번호를 가져오고 숫자로 가져오지 않으면 최종 Unknown 처리
+            if (int.TryParse(sheetName, out nUnit))
+            {
+                if (nUnit >= 0 && nUnit < 63)
+                {
+                    return nUnit;
+                }
+                else
+                {
+                    return (int)ENUM_SHEET_TYPES.UNKNOWN_TYPE;
+                }
+            }
+            else
+            {
+                return (int)ENUM_SHEET_TYPES.UNKNOWN_TYPE;
+            }
         }
 
         // Pattern Sheet Parsing
@@ -160,6 +241,92 @@ namespace LinkedDataView
                     DataManager dataManager = DataManager.Instance;
                     dataManager.AddToPatternDic(patternNumber, pattern);
                 }
+            }
+        }
+
+        // EB Sheet Parsing
+        private void ParsingEBSheet(DataTable table)
+        {
+            DataManager dataManager = DataManager.Instance;
+            for (int row = (int)EB_ROWS.ROW_START; row < table.Rows.Count; row++)
+            {
+                var rowData = table.Rows[row];
+
+                int number = -1;
+                string remarks = string.Empty;
+                string commContent = string.Empty;
+
+                // 번호
+                number = int.Parse(rowData[(int)EB_COLS.NUM].ToString());
+
+                // 비고
+                remarks = rowData[(int)EB_COLS.REMARKS].ToString();
+
+                // 통신내용
+                commContent = rowData[(int)EB_COLS.COMM_CONTENT].ToString();
+
+                EB eb = new EB(number, remarks, commContent);
+                dataManager.AddEB(number, eb);
+            }
+        }
+
+        private void ParsingPumpSheet(DataTable table)
+        {
+            DataManager dataManager = DataManager.Instance;
+            for(int row = (int)PUMP_ROWS.ROW_START; row < table.Rows.Count; row += 2)
+            {
+                var rowData = table.Rows[row];
+
+                int facpNumber = -1;
+                int pumpNumber = -1;
+                string pumpType = string.Empty;
+                string pumpName = string.Empty;
+                string lcdName = string.Empty;
+
+                // 수신기 번호
+                facpNumber = int.Parse(rowData[(int)PUMP_COLS.FACP_NUM].ToString());
+
+                // 펌프 번호
+                pumpNumber = int.Parse(rowData[(int)PUMP_COLS.PUMP_NUM].ToString());
+
+                // 펌프 타입
+                pumpType = rowData[(int)PUMP_COLS.PUMP_TYPE].ToString();
+
+                // 펌프 이름
+                pumpName = rowData[(int)PUMP_COLS.PUMP_NAME].ToString();
+
+                // LCD 이름
+                lcdName = rowData[(int)PUMP_COLS.LCD_NAME].ToString();
+
+                // 펌프 출력 정보는 가져오지 않음
+
+                Pump pump = new Pump(facpNumber, pumpNumber, pumpType, pumpName, lcdName);
+                dataManager.AddPump(pumpNumber, pump);
+            }
+        }
+
+        private void ParsingContactSheet(DataTable table)
+        {
+            DataManager dataManager = DataManager.Instance;
+            for (int row = (int)CONTACT_ROWS.ROW_START; row < table.Rows.Count; row ++)
+            {
+                var rowData = table.Rows[row];
+
+                int facpNumber = -1;
+                int contactNumber = -1;
+                string name = string.Empty;
+
+                // 수신기 번호
+                facpNumber = int.Parse(rowData[(int)CONTACT_COLS.FACP_NUM].ToString());
+
+                // 접점 번호
+                contactNumber = int.Parse(rowData[(int)CONTACT_COLS.CONTACT_NUM].ToString());
+
+                // 이름
+                name = rowData[(int)CONTACT_COLS.NAME].ToString();
+
+                Contact contact = new Contact(facpNumber, contactNumber, name);
+                dataManager.AppContact(contactNumber, contact);
             }
         }
 
@@ -345,8 +512,12 @@ namespace LinkedDataView
 
         public void GetLinkedData(string[] filePathList, Dictionary<string, string> facpNumDic)
         {
-            // 패턴 정보 파싱은 한 번만 실행
+            // 유닛 정보 외의 파싱은 한 번만 실행
             bool bPatternParsing = false;
+            bool bEBParsing = false;
+            bool bPumpParsing = false;
+            bool bPSParsing = false;
+            bool bContactParsing = false;
 
             foreach (string filePath in filePathList)
             {
@@ -373,24 +544,56 @@ namespace LinkedDataView
                             string sheetName = table.TableName;
 
                             // 어떤 Sheet인지 판단
-                            int nUnitNum = CheckSheetType(sheetName);
+                            int nSheetType = CheckSheetType(sheetName);
 
-                            // Parsing 대상 Sheet가 아니면 -1
-                            if (nUnitNum > -1)
+                            if (nSheetType > (int)ENUM_SHEET_TYPES.UNKNOWN_TYPE)
                             {
-                                // 패턴 Sheet
-                                if (nUnitNum == 1000)
+                                if (nSheetType >= SEPERATING_NUM_FROM_UNIT_NUM)
                                 {
-                                    if (!bPatternParsing)
+                                    nSheetType = nSheetType / SEPERATING_NUM_FROM_UNIT_NUM;
+
+                                    switch (nSheetType)
                                     {
-                                        ParsingPatternSheet(table);
-                                        bPatternParsing = true;
+                                        case (int)ENUM_SHEET_TYPES.PATTERN:
+                                            if (!bPatternParsing)
+                                            {
+                                                ParsingPatternSheet(table);
+                                                bPatternParsing = true;
+                                            }
+                                            break;
+                                        case (int)ENUM_SHEET_TYPES.EB:
+                                            if (!bEBParsing)
+                                            {
+                                                ParsingEBSheet(table);
+                                                bEBParsing = true;
+                                            }
+                                            break;
+                                        case (int)ENUM_SHEET_TYPES.PUMP:
+                                            if (!bPumpParsing)
+                                            {
+                                                ParsingPumpSheet(table);
+                                                bPumpParsing = true;
+                                            }
+                                            break;
+                                        case (int)ENUM_SHEET_TYPES.PS:
+                                            if (!bPSParsing)
+                                            {
+                                                // 압력스위치 정보는 가져오지 않음
+                                                bPSParsing = true;
+                                            }
+                                            break;
+                                        case (int)ENUM_SHEET_TYPES.CONTACT:
+                                            if (!bContactParsing)
+                                            {
+                                                ParsingContactSheet(table);
+                                                bContactParsing = true;
+                                            }
+                                            break;
                                     }
                                 }
-                                // Unit Sheet
                                 else
                                 {
-                                    ParsingUnitSheet(table, nFacpNum, nUnitNum);
+                                    ParsingUnitSheet(table, nFacpNum, nSheetType);
                                 }
                             }
                         }

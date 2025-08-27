@@ -12,12 +12,16 @@ namespace LinkedDataView
 
         private DataManager() 
         {
+            // 전체 연동표 정보 중 압력스위치 정보는 프로그램에서 사용하지 않으므로 가져오지 않음
             CircuitDic = new SortedDictionary<string, Circuit>();
             InputTypeDic = new SortedDictionary<string, List<Circuit>>();
             OutputTypeDic = new SortedDictionary<string, List<Circuit>>();
             EquipmentDic = new SortedDictionary<string, List<Circuit>>();
             OutputContentDic = new SortedDictionary<string, List<Circuit>>();
             PatternDic = new Dictionary<string, Pattern>();
+            EBDic = new Dictionary<string, EB>();
+            PumpDic = new Dictionary<string, Pump>();
+            ContactDic = new Dictionary<string, Contact>();
         }
 
         ~DataManager()
@@ -56,11 +60,20 @@ namespace LinkedDataView
         // 패턴 Dictionary, key: 패턴 번호 
         private Dictionary<string, Pattern> PatternDic;
 
+        // 비상방송 Dictionary, key: 비상방송 번호
+        private Dictionary<string, EB> EBDic;
+
+        // 펌프 Dictionary, key: 펌프 번호
+        private Dictionary<string, Pump> PumpDic;
+
+        // 수신기 접점 Dictionary, key : 접점 번호
+        private Dictionary<string, Contact> ContactDic;
+
         // 패턴 추가
         public void AddToPatternDic(int patternID, Pattern pattern)
         {
             // key값을 "P"와 Pattern ID를 붙여서 만들어서 검색 시 바로 매칭할 수 있도록 함
-            string strPatternID = "P" + patternID.ToString();
+            string strPatternID = $"P{patternID}";
             PatternDic.Add(strPatternID, pattern);
         }
 
@@ -195,6 +208,46 @@ namespace LinkedDataView
             return OutputContentDic;
         }
 
+        // 비상방송 추가
+        public void AddEB(int nEBNum, EB eb)
+        {
+            //비상 방송 번호 앞에 'A'를 붙여 문자열로 Key를 저장해서 바로 찾을 수 있도록 함
+            string strKey = $"A{nEBNum}";
+            EBDic.Add(strKey, eb);  
+        }
+
+        // 비상방송 가져오기
+        public Dictionary<string, EB> GetEBDic()
+        {
+            return EBDic;
+        }
+
+        // 펌프 추가
+        public void AddPump(int nPumpNum, Pump pump)
+        {
+            string strKey = $"M{nPumpNum}";
+            PumpDic.Add(strKey, pump);
+        }
+
+        // 펌프 가져오기
+        public Dictionary<string, Pump> GetPumpDic()
+        {
+            return PumpDic;
+        }
+
+        // 수신기 접점 추가
+        public void AppContact(int nContactNum, Contact contact)
+        {
+            string strKey = $"R{nContactNum}";
+            ContactDic.Add(strKey, contact);
+        }
+
+        // 수신기 접점 가져오기
+        public Dictionary<string, Contact> GetContactDic()
+        {
+            return ContactDic;
+        }
+
         public void ClearAllData()
         {
             if ((CircuitDic != null) && (CircuitDic.Count > 0))
@@ -265,6 +318,21 @@ namespace LinkedDataView
                 }
 
                 PatternDic.Clear();
+            }
+
+            if((EBDic != null) && (EBDic.Count > 0))
+            {
+                EBDic.Clear();
+            }
+
+            if((PumpDic != null) && (PumpDic.Count > 0))
+            {
+                PumpDic.Clear();
+            }
+
+            if((ContactDic != null) && (ContactDic.Count > 0))
+            {
+                ContactDic.Clear();
             }
         }
     }

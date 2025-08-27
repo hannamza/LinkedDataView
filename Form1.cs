@@ -25,6 +25,9 @@ namespace LinkedDataView
         private ColumnHeaderSorting lvPtnItemListSorter;
         public readonly string CIRCUIT_INFO_CAN_NOT_FOUNT_MSG = "(연동표에서 회로 정보를 찾을 수 없음)";
         private bool fileOpened;
+        private readonly Dictionary<int, TreeNode[]> _treeCache = new Dictionary<int, TreeNode[]>();
+        private int _currentSortType = -1;
+        private bool _suppressTreeEvents = false;
 
         public bool FileOpened
         {
@@ -49,7 +52,8 @@ namespace LinkedDataView
         }
 
         enum INPUT_SORT{
-            CIRCUIT_NUM = 0,
+            NO_TYPE = -1,
+            CIRCUIT_NUM,
             INPUT_TYPE,
             OUTPUT_TYPE,
             EQUIPMENT_NAME,
@@ -104,7 +108,7 @@ namespace LinkedDataView
                 Match match = numberPattern.Match(fileName);
                 if (!match.Success)
                 {
-                    errorMessage = $"파일 이름 형식이 올바르지 않습니다.: {fileName}\r\n파일 이름은 (연동표)로 시작해야 합니다.";
+                    errorMessage = $"파일 이름 형식이 올바르지 않습니다.: {fileName}\r\n파일 이름은 (연동표)로 시작해야 하며 .xlsx(확장자)앞에는 두 자리 숫자(수신기 번호)여야 합니다.";
                     return false;
                 }
 
@@ -233,7 +237,7 @@ namespace LinkedDataView
         private void btnClose_Click(object sender, EventArgs e)
         {
             fileOpened = false;
-
+            _treeCache.Clear();
             InitControls();
         }
 
@@ -247,8 +251,7 @@ namespace LinkedDataView
                 btnSearch.Enabled = true;
 
                 int inputTreeViewOrder = (int)INPUT_SORT.CIRCUIT_NUM;
-                comboBoxSort.SelectedIndex = inputTreeViewOrder;
-                DisplayInputTree(inputTreeViewOrder);
+                comboBoxSort.SelectedIndex = inputTreeViewOrder;        // Combobox index를 적용하는 것만으로 comboBoxSort_SelectedIndexChanged 매서드가 호출되어 따로 DisplayInputTree를 호출하지 않음
             }
             else
             {
@@ -286,10 +289,13 @@ namespace LinkedDataView
 
                 //패턴 리스트
                 listViewPtnItemList.Items.Clear();
+
+                //연동표가 닫힌 후 새로 연동표를 열었을 때 comboBoxSort_SelectedIndexChanged를 호출하게 해서 입력 회로를 그리게 해야 하므로 입력 회로 정렬 선택 인덱스를 -1로 세팅
+                comboBoxSort.SelectedIndex = (int)INPUT_SORT.NO_TYPE;
             }
         }
 
-        private void SetInputCircuitTreeOrderByCircuitNum()
+        private void SetInputCircuitTreeOrderByCircuitNum(TreeNodeCollection dummy)
         {
             ImageManager imageManager = ImageManager.Instance;
 
@@ -306,7 +312,7 @@ namespace LinkedDataView
                 string strCircuit = kvp.Value.InputFullName; // 예: [0000-0001] [연식아나로그] 클럽자이안1 B1F MDF실 [AN연기]
 
                 // TreeView 최상위 (FACP) 노드 찾거나 생성, ImageKey는 파일 이름
-                TreeNode facpNode = FindOrCreateNode(treeViewInput.Nodes, strFacp, imageManager.TREE_IMAGES_NAME[(int)ENUM_TREE_IMAGES.FACP]);
+                TreeNode facpNode = FindOrCreateNode(dummy, strFacp, imageManager.TREE_IMAGES_NAME[(int)ENUM_TREE_IMAGES.FACP]);
 
                 // Unit 노드 찾거나 생성, ImageKey는 파일 이름
                 TreeNode unitNode = FindOrCreateNode(facpNode.Nodes, strUnit, imageManager.TREE_IMAGES_NAME[(int)ENUM_TREE_IMAGES.UNIT]);
@@ -326,7 +332,7 @@ namespace LinkedDataView
             }
         }
 
-        private void SetInputCircuitTreeOrderByInputType()
+        private void SetInputCircuitTreeOrderByInputType(TreeNodeCollection dummy)
         {
             ImageManager imageManager = ImageManager.Instance;
 
@@ -341,7 +347,7 @@ namespace LinkedDataView
                     string strCircuit = circuit.InputFullName;
 
                     // TreeView 최상위 (InputType) 노드 찾거나 생성
-                    TreeNode InputTypeNode = FindOrCreateNode(treeViewInput.Nodes, strInputType, imageManager.TREE_IMAGES_NAME[(int)ImageManager.ENUM_TREE_IMAGES.INPUT_TYPE]);
+                    TreeNode InputTypeNode = FindOrCreateNode(dummy, strInputType, imageManager.TREE_IMAGES_NAME[(int)ImageManager.ENUM_TREE_IMAGES.INPUT_TYPE]);
 
                     // Circuit 노드 추가 (회로는 중복이 없으므로 바로 추가)
                     TreeNode circuitNode = new TreeNode(strCircuit)
@@ -356,7 +362,7 @@ namespace LinkedDataView
             }
         }
 
-        private void SetInputCircuitTreeOrderByOutputType()
+        private void SetInputCircuitTreeOrderByOutputType(TreeNodeCollection dummy)
         {
             ImageManager imageManager = ImageManager.Instance;
 
@@ -371,7 +377,7 @@ namespace LinkedDataView
                     string strCircuit = circuit.InputFullName;
 
                     // TreeView 최상위 (outputType) 노드 찾거나 생성
-                    TreeNode outputTypeNode = FindOrCreateNode(treeViewInput.Nodes, strOutputType, imageManager.TREE_IMAGES_NAME[(int)ENUM_TREE_IMAGES.OUTPUT_TYPE]);
+                    TreeNode outputTypeNode = FindOrCreateNode(dummy, strOutputType, imageManager.TREE_IMAGES_NAME[(int)ENUM_TREE_IMAGES.OUTPUT_TYPE]);
 
                     // Circuit 노드 추가 (회로는 중복이 없으므로 바로 추가)
                     TreeNode circuitNode = new TreeNode(strCircuit)
@@ -386,7 +392,7 @@ namespace LinkedDataView
             }
         }
 
-        private void SetInputCircuitTreeOrderByEquipmentName()
+        private void SetInputCircuitTreeOrderByEquipmentName(TreeNodeCollection dummy)
         {
             ImageManager imageManager = ImageManager.Instance;  
 
@@ -401,7 +407,7 @@ namespace LinkedDataView
                     string strCircuit = circuit.InputFullName;
 
                     // TreeView 최상위 (equipmentName) 노드 찾거나 생성
-                    TreeNode equipmentNameNode = FindOrCreateNode(treeViewInput.Nodes, strEquipment, imageManager.TREE_IMAGES_NAME[(int)ENUM_TREE_IMAGES.EQUIPMENT_NAME]);
+                    TreeNode equipmentNameNode = FindOrCreateNode(dummy, strEquipment, imageManager.TREE_IMAGES_NAME[(int)ENUM_TREE_IMAGES.EQUIPMENT_NAME]);
 
                     // Circuit 노드 추가 (회로는 중복이 없으므로 바로 추가)
                     TreeNode circuitNode = new TreeNode(strCircuit)
@@ -416,7 +422,7 @@ namespace LinkedDataView
             }
         }
 
-        private void SetInputCircuitTreeOrderByOutputContent()
+        private void SetInputCircuitTreeOrderByOutputContent(TreeNodeCollection dummy)
         {
             ImageManager imageManager = ImageManager.Instance;
 
@@ -431,7 +437,7 @@ namespace LinkedDataView
                     string strCircuit = circuit.InputFullName;
 
                     // TreeView 최상위 (outputContent) 노드 찾거나 생성
-                    TreeNode outputContentNode = FindOrCreateNode(treeViewInput.Nodes, strOutputType, imageManager.TREE_IMAGES_NAME[(int)ENUM_TREE_IMAGES.OUTPUT_CONTENT]);
+                    TreeNode outputContentNode = FindOrCreateNode(dummy, strOutputType, imageManager.TREE_IMAGES_NAME[(int)ENUM_TREE_IMAGES.OUTPUT_CONTENT]);
 
                     // Circuit 노드 추가 (회로는 중복이 없으므로 바로 추가)
                     TreeNode circuitNode = new TreeNode(strCircuit)
@@ -464,42 +470,98 @@ namespace LinkedDataView
             return newNode;
         }
 
-        // 각 정렬 조건으로 표시는 되는 것 같은데 실제 엑셀 파일과 비교해 볼 것, 설비명 / 출력 내용 기준 정렬 추가 필요
-        private void DisplayInputTree(int sortType)
+        private static TreeNode CloneTreeNodeDeep(TreeNode src)
         {
-            // 기존 트리 초기화
-            treeViewInput.Nodes.Clear();
+            var dst = new TreeNode(src.Text)
+            {
+                // 필요 속성 복제
+                Name = src.Name,                // 쓰고 있으면
+                Tag = src.Tag,                  // 참조 복제 (원본 객체 공유 OK)
+                ImageKey = src.ImageKey,
+                SelectedImageKey = src.SelectedImageKey,
+                ImageIndex = src.ImageIndex,
+                SelectedImageIndex = src.SelectedImageIndex,
+                StateImageIndex = src.StateImageIndex,
+                ToolTipText = src.ToolTipText
+            };
 
-            treeViewInput.BeginUpdate();
+            // children
+            foreach (TreeNode child in src.Nodes)
+                dst.Nodes.Add(CloneTreeNodeDeep(child));
+
+            return dst;
+        }
+
+        private static TreeNode[] CloneRange(TreeNode[] nodes)
+        {
+            var cloned = new TreeNode[nodes.Length];
+            for (int i = 0; i < nodes.Length; i++)
+                cloned[i] = CloneTreeNodeDeep(nodes[i]);
+            return cloned;
+        }
+
+        // 실제 트리가 아니라 메모리에 트리 내용을 먼저 채움
+        private TreeNode[] BuildTreeNodes(int sortType)
+        {
+            var dummy = new System.Windows.Forms.TreeView();
 
             switch (sortType)
             {
                 case (int)INPUT_SORT.CIRCUIT_NUM:
-                    SetInputCircuitTreeOrderByCircuitNum();
+                    SetInputCircuitTreeOrderByCircuitNum(dummy.Nodes);
                     break;
                 case (int)INPUT_SORT.INPUT_TYPE:
-                    SetInputCircuitTreeOrderByInputType();
+                    SetInputCircuitTreeOrderByInputType(dummy.Nodes);
                     break;
                 case (int)INPUT_SORT.OUTPUT_TYPE:
-                    SetInputCircuitTreeOrderByOutputType();
+                    SetInputCircuitTreeOrderByOutputType(dummy.Nodes);
                     break;
                 case (int)INPUT_SORT.EQUIPMENT_NAME:
-                    SetInputCircuitTreeOrderByEquipmentName();
+                    SetInputCircuitTreeOrderByEquipmentName(dummy.Nodes);
                     break;
                 case (int)INPUT_SORT.OUTPUT_CONTENT:
-                    SetInputCircuitTreeOrderByOutputContent();
-                    break;
-                default:
+                    SetInputCircuitTreeOrderByOutputContent(dummy.Nodes);
                     break;
             }
 
-            treeViewInput.EndUpdate();
+            return dummy.Nodes.Cast<TreeNode>().ToArray();
+        }
+
+        // 정렬 기준에 따라 트리 구성, 데이터가 많아서 처리가 느릴 경우에 대비해 실제 UI와 정렬 기준에 따라 달리 구성되는 데이터를 분리
+        private void DisplayInputTree(int sortType)
+        {
+            _suppressTreeEvents = true;
+            treeViewInput.BeginUpdate();
+
+            try
+            {
+                // 현재 화면 내용은 그냥 지움 (복제본으로 붙인 것이므로 원본 캐시는 안전)
+                treeViewInput.Nodes.Clear();
+
+                // 캐시에 없으면 빌드하여 "템플릿"으로 저장
+                if (!_treeCache.TryGetValue(sortType, out var templateNodes))
+                {
+                    templateNodes = BuildTreeNodes(sortType); // 아래 ③
+                    _treeCache[sortType] = templateNodes;
+                }
+
+                // 붙일 때는 항상 새 복제본으로!
+                var clones = CloneRange(templateNodes);
+                treeViewInput.Nodes.AddRange(clones);
+
+                _currentSortType = sortType;
+            }
+            finally
+            {
+                treeViewInput.EndUpdate();
+                _suppressTreeEvents = false;
+            }
         }
 
         private void comboBoxSort_SelectedIndexChanged(object sender, EventArgs e)
         {
             int nOrderType = comboBoxSort.SelectedIndex;
-            if(nOrderType != -1)
+            if(nOrderType != (int)INPUT_SORT.NO_TYPE)
             {
                 DisplayInputTree(nOrderType);
             }
@@ -539,6 +601,9 @@ namespace LinkedDataView
             DataManager dataManager = DataManager.Instance;
             ImageManager imageManager = ImageManager.Instance;  
             Dictionary<string, Pattern> patternDic = dataManager.GetPatternDic();
+            Dictionary<string, EB> ebDic = dataManager.GetEBDic();
+            Dictionary<string, Pump> pumpDic = dataManager.GetPumpDic();
+            Dictionary<string, Contact> contactDic = dataManager.GetContactDic();
             SortedDictionary<string, Circuit> circuitDic = dataManager.GetCircuitDic();
 
             // 출력 패턴 리스트 clear
@@ -556,18 +621,39 @@ namespace LinkedDataView
                 {
                     string strType = MakeOutputPtnItemType(output);
 
-                    // 패턴 이름 찾기
-                    string strPatternName;
+                    // 이름 찾기
+                    string strName = string.Empty; 
                     if (strType == TYPE_TEXT[(int)TYPE_TEXT_INDEX.PATTERN])
                     {
-                        strPatternName = patternDic[output].Name;
+                        if (patternDic.TryGetValue(output, out Pattern pattern))
+                        {
+                            strName = pattern.Name;
+                        }
                     }
-                    else
+                    else if (strType == TYPE_TEXT[(int)TYPE_TEXT_INDEX.EB])
                     {
-                        strPatternName = string.Empty;
+                        if(ebDic.TryGetValue(output, out EB eb))
+                        {
+                            // SLP4에서 표현하는 방식과 같은 방식
+                            strName = eb.Remarks + " (" + eb.CommContent + ")";
+                        }
+                    }
+                    else if (strType == TYPE_TEXT[(int)TYPE_TEXT_INDEX.PUMP])
+                    {
+                        if(pumpDic.TryGetValue(output, out Pump pump))
+                        {
+                            strName = pump.PumpName;
+                        }
+                    }
+                    else if (strType == TYPE_TEXT[(int) TYPE_TEXT_INDEX.FACP_CONTACT])
+                    {
+                        if(contactDic.TryGetValue(output, out Contact contact))
+                        {
+                            strName = contact.Name;
+                        }
                     }
 
-                    listViewOutputPtn.Items.Add(new ListViewItem(new string[] { output, strPatternName, strType}));
+                    listViewOutputPtn.Items.Add(new ListViewItem(new string[] { output, strName, strType}));
                 }
             }
             listViewOutputPtn.EndUpdate();
@@ -626,6 +712,9 @@ namespace LinkedDataView
 
         private void treeViewInput_AfterSelect(object sender, TreeViewEventArgs e)
         {
+            if (_suppressTreeEvents) 
+                return;
+
             TreeNode selectedNode = e.Node;
 
             //말단 노드(자식이 없는 노드)만 처리

@@ -477,10 +477,14 @@ namespace LinkedDataView
                 // 필요 속성 복제
                 Name = src.Name,                // 쓰고 있으면
                 Tag = src.Tag,                  // 참조 복제 (원본 객체 공유 OK)
+
+                // src의 이미지는 key값을 기반으로 값을 가지고 있는데 Index까지 복사하면 src에서는 Index를 설정하지 않은 상황에서 컨트롤에서 표현 시
+                // Index가 Key값에 우선하기 때문에 Index 0번이 f.png로 보이는 현상이 생김
                 ImageKey = src.ImageKey,
                 SelectedImageKey = src.SelectedImageKey,
-                ImageIndex = src.ImageIndex,
-                SelectedImageIndex = src.SelectedImageIndex,
+                //ImageIndex = src.ImageIndex,
+                //SelectedImageIndex = src.SelectedImageIndex,
+
                 StateImageIndex = src.StateImageIndex,
                 ToolTipText = src.ToolTipText
             };

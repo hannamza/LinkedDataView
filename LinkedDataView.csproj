@@ -99,6 +99,7 @@
     <Compile Include="Pump.cs" />
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="ExcelLoadingForm.resx">
       <DependentUpon>ExcelLoadingForm.cs</DependentUpon>
@@ -135,6 +136,7 @@
     <None Include="bin\Debug\Images\fileclose.png" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="bin\Debug\Images\help.png" />
     <Content Include="icons8-view-94.ico" />
   </ItemGroup>
   <ItemGroup>

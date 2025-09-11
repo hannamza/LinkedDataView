@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Text;
 using System.IO;
@@ -18,16 +19,17 @@ namespace LinkedDataView
 {
     public partial class Form1 : Form
     {
-        public readonly string PROGRAM_VERSION = "1.1";
+        public readonly string PROGRAM_VERSION = "1.2";
         public readonly string[] TYPE_TEXT = { "Unknown Type", "패턴", "비상방송", "펌프", "수신기 접점" };
         private ColumnHeaderSorting lvOutputPtnSorter;
         private ColumnHeaderSorting lvOutputCircuitSorter;
         private ColumnHeaderSorting lvPtnItemListSorter;
-        public readonly string CIRCUIT_INFO_CAN_NOT_FOUNT_MSG = "(연동표에서 회로 정보를 찾을 수 없음)";
+        public readonly string CIRCUIT_INFO_CAN_NOT_FOUND_MSG = "(연동표에서 회로 정보를 찾을 수 없음)";
         private bool fileOpened;
         private readonly Dictionary<int, TreeNode[]> _treeCache = new Dictionary<int, TreeNode[]>();
         private int _currentSortType = -1;
         private bool _suppressTreeEvents = false;
+        private readonly string HELP_FILE_NAME = "사용 설명서.pdf";
 
         public bool FileOpened
         {
@@ -699,7 +701,7 @@ namespace LinkedDataView
                     }
                     else
                     {
-                        strFullOutputName = $"[{output}] {CIRCUIT_INFO_CAN_NOT_FOUNT_MSG}";
+                        strFullOutputName = $"[{output}] {CIRCUIT_INFO_CAN_NOT_FOUND_MSG}";
                         circuitRow.ImageKey = imageManager.DEFAULT_IMAGE_NAME;
                     }
 
@@ -807,7 +809,7 @@ namespace LinkedDataView
                     }
                     else
                     {
-                        strFullOutputName = $"[{item}] {CIRCUIT_INFO_CAN_NOT_FOUNT_MSG}";
+                        strFullOutputName = $"[{item}] {CIRCUIT_INFO_CAN_NOT_FOUND_MSG}";
                         itemRow.ImageKey = imageManager.DEFAULT_IMAGE_NAME;
                     }
 
@@ -985,7 +987,7 @@ namespace LinkedDataView
                             }
                             else
                             {
-                                outputFullName = item + " " + CIRCUIT_INFO_CAN_NOT_FOUNT_MSG;
+                                outputFullName = item + " " + CIRCUIT_INFO_CAN_NOT_FOUND_MSG;
                             }
 
                             if (outputFullName.Contains(strSearch))
@@ -1125,6 +1127,48 @@ namespace LinkedDataView
             }
 
             return patternNameList;
+        }
+
+        private void btnHelp_Click(object sender, EventArgs e)
+        {
+            // 실행 중인 exe의 경로
+            string exePath = AppDomain.CurrentDomain.BaseDirectory;
+
+            // 사용 설명서 경로
+            string helpFilePath = Path.Combine(exePath, HELP_FILE_NAME);
+
+            if (!File.Exists(helpFilePath))
+            {
+                MessageBox.Show("사용 설명서 파일이 존재하지 않습니다.\n" + helpFilePath, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            try
+            {
+                var psi = new ProcessStartInfo
+                {
+                    FileName = helpFilePath,
+                    UseShellExecute = true
+                };
+
+                var proc = Process.Start(psi);
+
+                if (proc == null)
+                {
+                    MessageBox.Show("PDF 뷰어 실행에 실패했습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("사용 설명서 파일을 여는 중 오류가 발생했습니다.\n" + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void btnHelp_MouseHover(object sender, EventArgs e)
+        {
+            this.toolTipHelp.ToolTipTitle = "사용 설명서";
+            this.toolTipHelp.IsBalloon = true;
+            this.toolTipHelp.SetToolTip(this.btnHelp, "보기");
         }
     }
 }

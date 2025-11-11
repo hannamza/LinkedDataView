@@ -34,6 +34,9 @@
             this.PanelBtn = new System.Windows.Forms.FlowLayoutPanel();
             this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
             this.flowLayoutPanelBtn = new System.Windows.Forms.FlowLayoutPanel();
+            this.btnOpen = new System.Windows.Forms.Button();
+            this.btnClose = new System.Windows.Forms.Button();
+            this.btnHelp = new System.Windows.Forms.Button();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.panelInputCircuit = new System.Windows.Forms.Panel();
             this.treeViewInput = new System.Windows.Forms.TreeView();
@@ -65,9 +68,6 @@
             this.lvpl_name = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.toolTipOpen = new System.Windows.Forms.ToolTip(this.components);
             this.toolTipClose = new System.Windows.Forms.ToolTip(this.components);
-            this.btnOpen = new System.Windows.Forms.Button();
-            this.btnClose = new System.Windows.Forms.Button();
-            this.btnHelp = new System.Windows.Forms.Button();
             this.toolTipHelp = new System.Windows.Forms.ToolTip(this.components);
             this.tableMain.SuspendLayout();
             this.PanelBtn.SuspendLayout();
@@ -131,7 +131,7 @@
             this.tableLayoutPanel3.ColumnCount = 3;
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 22.69129F));
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 77.30871F));
-            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 115F));
+            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 118F));
             this.tableLayoutPanel3.Controls.Add(this.flowLayoutPanelBtn, 0, 0);
             this.tableLayoutPanel3.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel3.Name = "tableLayoutPanel3";
@@ -150,6 +150,39 @@
             this.flowLayoutPanelBtn.Name = "flowLayoutPanelBtn";
             this.flowLayoutPanelBtn.Size = new System.Drawing.Size(245, 70);
             this.flowLayoutPanelBtn.TabIndex = 0;
+            // 
+            // btnOpen
+            // 
+            this.btnOpen.Image = global::LinkedDataView.Properties.Resources.fileopen;
+            this.btnOpen.Location = new System.Drawing.Point(3, 3);
+            this.btnOpen.Name = "btnOpen";
+            this.btnOpen.Size = new System.Drawing.Size(75, 67);
+            this.btnOpen.TabIndex = 0;
+            this.btnOpen.UseVisualStyleBackColor = true;
+            this.btnOpen.Click += new System.EventHandler(this.btnOpen_Click);
+            this.btnOpen.MouseHover += new System.EventHandler(this.btnOpen_MouseHover);
+            // 
+            // btnClose
+            // 
+            this.btnClose.Image = global::LinkedDataView.Properties.Resources.fileclose;
+            this.btnClose.Location = new System.Drawing.Point(84, 3);
+            this.btnClose.Name = "btnClose";
+            this.btnClose.Size = new System.Drawing.Size(75, 67);
+            this.btnClose.TabIndex = 1;
+            this.btnClose.UseVisualStyleBackColor = true;
+            this.btnClose.Click += new System.EventHandler(this.btnClose_Click);
+            this.btnClose.MouseHover += new System.EventHandler(this.btnClose_MouseHover);
+            // 
+            // btnHelp
+            // 
+            this.btnHelp.Image = global::LinkedDataView.Properties.Resources.help;
+            this.btnHelp.Location = new System.Drawing.Point(165, 3);
+            this.btnHelp.Name = "btnHelp";
+            this.btnHelp.Size = new System.Drawing.Size(75, 67);
+            this.btnHelp.TabIndex = 2;
+            this.btnHelp.UseVisualStyleBackColor = true;
+            this.btnHelp.Click += new System.EventHandler(this.btnHelp_Click);
+            this.btnHelp.MouseHover += new System.EventHandler(this.btnHelp_MouseHover);
             // 
             // splitContainer1
             // 
@@ -496,39 +529,6 @@
             // 
             this.lvpl_name.Text = "출력 회로";
             this.lvpl_name.Width = 355;
-            // 
-            // btnOpen
-            // 
-            this.btnOpen.Image = global::LinkedDataView.Properties.Resources.fileopen;
-            this.btnOpen.Location = new System.Drawing.Point(3, 3);
-            this.btnOpen.Name = "btnOpen";
-            this.btnOpen.Size = new System.Drawing.Size(75, 67);
-            this.btnOpen.TabIndex = 0;
-            this.btnOpen.UseVisualStyleBackColor = true;
-            this.btnOpen.Click += new System.EventHandler(this.btnOpen_Click);
-            this.btnOpen.MouseHover += new System.EventHandler(this.btnOpen_MouseHover);
-            // 
-            // btnClose
-            // 
-            this.btnClose.Image = global::LinkedDataView.Properties.Resources.fileclose;
-            this.btnClose.Location = new System.Drawing.Point(84, 3);
-            this.btnClose.Name = "btnClose";
-            this.btnClose.Size = new System.Drawing.Size(75, 67);
-            this.btnClose.TabIndex = 1;
-            this.btnClose.UseVisualStyleBackColor = true;
-            this.btnClose.Click += new System.EventHandler(this.btnClose_Click);
-            this.btnClose.MouseHover += new System.EventHandler(this.btnClose_MouseHover);
-            // 
-            // btnHelp
-            // 
-            this.btnHelp.Image = global::LinkedDataView.Properties.Resources.help;
-            this.btnHelp.Location = new System.Drawing.Point(165, 3);
-            this.btnHelp.Name = "btnHelp";
-            this.btnHelp.Size = new System.Drawing.Size(75, 67);
-            this.btnHelp.TabIndex = 2;
-            this.btnHelp.UseVisualStyleBackColor = true;
-            this.btnHelp.Click += new System.EventHandler(this.btnHelp_Click);
-            this.btnHelp.MouseHover += new System.EventHandler(this.btnHelp_MouseHover);
             // 
             // Form1
             // 

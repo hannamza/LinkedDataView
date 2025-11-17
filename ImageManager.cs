@@ -1,26 +1,32 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace LinkedDataView
 {
     internal class ImageManager
     {
         // 트리에 들어갈 이미지 폴더
-        public readonly string IMAGES_FOLDER = "Images";
+        public readonly string IMAGES_FOLDER = "TREE_IMAGES";
 
         // 출력내용 아이콘 이미지 폴더
-        public readonly string OUTPUT_CONTENT_IMAGES_FOLDER = "OutputContentImages";
+        public readonly string OUTPUT_CONTENT_IMAGES_FOLDER = "OUTPUT_CONTENT_IMAGES";
 
         // 출력내용 기본 이미지 이름
         public readonly string DEFAULT_IMAGE_NAME = "default";
 
         // 출력 내용 이미지 리스트
         List<string> outputContentList = new List<string>();
+
+        // 이미지 리스트
+        private ImageList imageListSmall;
+        private ImageList imageListLarge;
 
         public enum ENUM_TREE_IMAGES
         {
@@ -52,6 +58,7 @@ namespace LinkedDataView
         public ImageManager() 
         {
             GetOutputContentImagesList();
+            GetImageList();
         }
 
         private static ImageManager instance;
@@ -119,6 +126,58 @@ namespace LinkedDataView
                 strRet = cleaned;
             }
             return strRet;
+        }
+
+        private Image ResizeFit(string path, Size target)
+        {
+            using (var src = Image.FromFile(path))
+            {
+                var bmp = new Bitmap(target.Width, target.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                bmp.SetResolution(96, 96); // DPI 고정
+                using (var g = Graphics.FromImage(bmp))
+                {
+                    g.Clear(Color.Transparent);
+                    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                    g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                    g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
+
+                    // 비율 유지해서 꽉 차지 않게 맞추기
+                    float rw = (float)target.Width / src.Width;
+                    float rh = (float)target.Height / src.Height;
+                    float r = Math.Min(rw, rh);
+                    int w = (int)(src.Width * r);
+                    int h = (int)(src.Height * r);
+                    int x = (target.Width - w) / 2;
+                    int y = (target.Height - h) / 2;
+
+                    g.DrawImage(src, new Rectangle(x, y, w, h));
+                }
+                return bmp; // 호출부에서 ImageList에 넣을 것
+            }
+        }
+        private void GetImageList()
+        {
+            imageListSmall = new ImageList { ImageSize = new Size(48, 48), ColorDepth = ColorDepth.Depth32Bit };
+            imageListLarge = new ImageList { ImageSize = new Size(128, 128), ColorDepth = ColorDepth.Depth32Bit };
+
+            foreach (string outputContent in outputContentList)
+            {
+                string imagePath = GetOutputContentImagePath(outputContent);
+                var small = ResizeFit(imagePath, imageListSmall.ImageSize);
+                var large = ResizeFit(imagePath, imageListLarge.ImageSize);
+                imageListSmall.Images.Add(outputContent, small);
+                imageListLarge.Images.Add(outputContent, large);
+            }
+        }
+
+        public ImageList GetImageListSmall()
+        {
+            return imageListSmall;
+        }
+
+        public ImageList GetImageListLarge()
+        {
+            return imageListLarge;
         }
     }
 }

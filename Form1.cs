@@ -19,7 +19,7 @@ namespace LinkedDataView
 {
     public partial class Form1 : Form
     {
-        public readonly string PROGRAM_VERSION = "1.2";
+        public readonly string PROGRAM_VERSION = "1.3";
         public readonly string[] TYPE_TEXT = { "Unknown Type", "패턴", "비상방송", "펌프", "수신기 접점" };
         private ColumnHeaderSorting lvOutputPtnSorter;
         private ColumnHeaderSorting lvOutputCircuitSorter;
@@ -1071,24 +1071,12 @@ namespace LinkedDataView
         private void SetImagesInListView()
         {
             ImageManager imageManager = ImageManager.Instance;
-            List<string> outputContentList = imageManager.GetOutputContentList();
-            ImageList imageListSmall = new ImageList();
-            ImageList imageListLarge = new ImageList();
-            imageListSmall.ImageSize = new Size(48, 48);
-            imageListLarge.ImageSize = new Size(128, 128);
 
-            foreach (string outputContent in outputContentList)
-            {
-                string imagePath = imageManager.GetOutputContentImagePath(outputContent);
-                imageListSmall.Images.Add(outputContent, Image.FromFile(imagePath));
-                imageListLarge.Images.Add(outputContent, Image.FromFile(imagePath));
-            }
+            listViewOutputCircuit.SmallImageList = imageManager.GetImageListSmall();
+            listViewOutputCircuit.LargeImageList = imageManager.GetImageListLarge();
 
-            listViewOutputCircuit.SmallImageList = imageListSmall;
-            listViewOutputCircuit.LargeImageList = imageListLarge;
-
-            listViewPtnItemList.SmallImageList = imageListSmall;
-            listViewPtnItemList.LargeImageList = imageListLarge;
+            listViewPtnItemList.SmallImageList = imageManager.GetImageListSmall();
+            listViewPtnItemList.LargeImageList = imageManager.GetImageListLarge();
         }
 
         private void SetImagesInSearchTreeView()
